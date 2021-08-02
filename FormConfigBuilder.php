@@ -128,6 +128,23 @@ class FormConfigBuilder implements FormConfigBuilderInterface
     }
 
     /**
+     * @param string|null $name
+     * @param array $options
+     *
+     * @return FormConfigBuilder
+     */
+    public function clone(?string $name, array $options = [])
+    {
+        self::validateName($name);
+
+        $clone = clone $this;
+        $clone->name = (string) $name;
+        $clone->options = array_replace($clone->options, $options);
+
+        return $clone;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function addEventListener(string $eventName, callable $listener, int $priority = 0)

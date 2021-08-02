@@ -30,19 +30,21 @@ class ResizeFormListener implements EventSubscriberInterface
     protected $allowDelete;
 
     private $deleteEmpty;
+    private $cloneEntryInstance;
 
     /**
      * @param bool          $allowAdd    Whether children could be added to the group
      * @param bool          $allowDelete Whether children could be removed from the group
      * @param bool|callable $deleteEmpty
      */
-    public function __construct(string $type, array $options = [], bool $allowAdd = false, bool $allowDelete = false, $deleteEmpty = false)
+    public function __construct(string $type, array $options = [], bool $allowAdd = false, bool $allowDelete = false, $deleteEmpty = false, bool $cloneEntryInstance = false)
     {
         $this->type = $type;
         $this->allowAdd = $allowAdd;
         $this->allowDelete = $allowDelete;
         $this->options = $options;
         $this->deleteEmpty = $deleteEmpty;
+        $this->cloneEntryInstance = $cloneEntryInstance;
     }
 
     public static function getSubscribedEvents()
@@ -74,10 +76,22 @@ class ResizeFormListener implements EventSubscriberInterface
         }
 
         // Then add all rows again in the correct order
-        foreach ($data as $name => $value) {
-            $form->add($name, $this->type, array_replace([
-                'property_path' => '['.$name.']',
-            ], $this->options));
+        if ($this->cloneEntryInstance) {
+            // new logic
+            $prototype = $form->getConfig()->getFormFactory()->create($this->type, null, array_replace($this->options, ['auto_initialize' => false]));
+
+            foreach ($data as $name => $value) {
+                if (!$form->has($name)) {
+                    $form->add($prototype->clone($name, ['property_path' => '['.$name.']']));
+                }
+            }
+        } else {
+            // old logic
+            foreach ($data as $name => $value) {
+                $form->add($name, $this->type, array_replace([
+                    'property_path' => '['.$name.']',
+                ], $this->options));
+            }
         }
     }
 
@@ -103,9 +117,23 @@ class ResizeFormListener implements EventSubscriberInterface
         if ($this->allowAdd) {
             foreach ($data as $name => $value) {
                 if (!$form->has($name)) {
-                    $form->add($name, $this->type, array_replace([
-                        'property_path' => '['.$name.']',
-                    ], $this->options));
+                    if ($this->cloneEntryInstance) {
+                        // new logic
+                        $prototype = $form->getConfig()->getFormFactory()->create($this->type, null, array_replace($this->options, ['auto_initialize' => false]));
+
+                        foreach ($data as $name => $value) {
+                            if (!$form->has($name)) {
+                                $form->add($prototype->clone($name, ['property_path' => '['.$name.']']));
+                            }
+                        }
+                    } else {
+                        // old logic
+                        foreach ($data as $name => $value) {
+                            $form->add($name, $this->type, array_replace([
+                                'property_path' => '['.$name.']',
+                            ], $this->options));
+                        }
+                    }
                 }
             }
         }

@@ -193,6 +193,15 @@ class Form implements \IteratorAggregate, FormInterface, ClearableErrorsInterfac
         $this->name = $config->getName();
     }
 
+    public function clone(?string $name, array $options = [])
+    {
+        $config = $this->config->clone($name, $options);
+        $clone = clone $this;
+        $clone->name = $config->getName();
+
+        return $clone;
+    }
+
     public function __clone()
     {
         $this->children = clone $this->children;
